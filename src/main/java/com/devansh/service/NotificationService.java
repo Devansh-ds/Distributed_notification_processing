@@ -31,16 +31,8 @@ public class NotificationService {
                 notificationRequest.getType()
         );
 
-        logger.info("Sending notification: {}", notification);
         boolean published = notificationQueue.publish(notification);
-
-        if (published) {
-            logger.info("Notification published successfully with id: {}", notification.getId());
-            return new NotificationResponse(notification.getId(), published);
-        }
-
-        logger.warn("Notification publish failed with id: {}", notification.getId());
-        throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests, queue is full");
+        return new NotificationResponse(notification.getId(), published);
     }
 
 }

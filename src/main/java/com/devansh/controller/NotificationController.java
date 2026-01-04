@@ -23,6 +23,11 @@ public class NotificationController {
     @PostMapping
     public ResponseEntity<NotificationResponse> sendNotification(@RequestBody NotificationRequest notificationRequest) {
         NotificationResponse notificationResponse = notificationService.sendNotification(notificationRequest);
+
+        if (!notificationResponse.isPublished()) {
+            return ResponseEntity.status(429).body(notificationResponse);
+        }
+
         return new ResponseEntity<>(notificationResponse, HttpStatus.ACCEPTED);
     }
 

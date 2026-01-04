@@ -44,7 +44,6 @@ public class NotificationConsumer {
                 while (true) {
                     try {
                         Notification notification = notificationQueue.take();
-                        log.info("Processing notification with workerId: {}, and notification: {}", workerId, notification);
                         Thread.sleep(waitingTimeInMilliSeconds);
                     } catch (InterruptedException e) {
                         log.error("Interrupted Exception for workerId: {} and message: {}", workerId, e.getMessage());

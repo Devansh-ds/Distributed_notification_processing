@@ -18,5 +18,4 @@ public class InMemoryNotificationQueue {
     public Notification take() throws InterruptedException {
         return queue.take();
     }
-
 }

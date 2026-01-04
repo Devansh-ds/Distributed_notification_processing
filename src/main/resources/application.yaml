@@ -1,18 +1,17 @@
 spring:
   application:
     name: DistributedNotificationProcessing
-#logging:
-#  level:
-#    com.devansh: trace
-#    root: warn
+logging:
+  level:
+    root: warn
 #  file:
 #    name: logs/application.log
 #    max-size: 20MB
 
-server:
-  tomcat:
-    max-connections: 2000
-    accept-count: 1000
-    threads:
-      max: 200
-      min-spare: 20
+#server:
+#  tomcat:
+#    max-connections: 5000
+#    accept-count: 2000
+#    threads:
+#      max: 300
+#      min-spare: 50

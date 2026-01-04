@@ -19,7 +19,7 @@ public class LoadTester {
     static AtomicInteger rejectedCount = new AtomicInteger(); // 429
     static AtomicInteger errorCount = new AtomicInteger();
 
-    static ObjectMapper mapper = new ObjectMapper();
+    static final Semaphore inFlight = new Semaphore(50);
 
     public static void main(String[] args) {
 
@@ -30,7 +30,6 @@ public class LoadTester {
 
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
-                .executor(executor)
                 .build();
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -61,6 +60,13 @@ public class LoadTester {
 
     private static CompletableFuture<Void> sendRequest(HttpClient client, int id) {
 
+        try {
+            inFlight.acquire();
+        } catch (InterruptedException e) {
+            errorCount.incrementAndGet();
+            return CompletableFuture.completedFuture(null);
+        }
+
         String body = """
             {
               "type": "EMAIL",
@@ -78,23 +84,14 @@ public class LoadTester {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     int status = response.statusCode();
-
-                    if (status == 200 || status == 202) {
-                        acceptedCount.incrementAndGet();
-                        return;
-                    }
-
-                    if (status == 429) {
-                        rejectedCount.incrementAndGet();
-                        return;
-                    }
-
-                    errorCount.incrementAndGet();
+                    if (status == 200 || status == 202) acceptedCount.incrementAndGet();
+                    else if (status == 429) rejectedCount.incrementAndGet();
+                    else errorCount.incrementAndGet();
                 })
                 .exceptionally(ex -> {
-                    ex.printStackTrace();
                     errorCount.incrementAndGet();
                     return null;
-                });
+                })
+                .whenComplete((r, t) -> inFlight.release());
     }
 }

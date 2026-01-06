@@ -34,5 +34,4 @@ public class NotificationService {
         boolean published = notificationQueue.publish(notification);
         return new NotificationResponse(notification.getId(), published);
     }
-
 }

@@ -23,7 +23,7 @@ public class LoadTester {
 
     public static void main(String[] args) {
 
-        int totalRequests = 10_000;
+        int totalRequests = 100_000;
         int concurrency = 50;
 
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);

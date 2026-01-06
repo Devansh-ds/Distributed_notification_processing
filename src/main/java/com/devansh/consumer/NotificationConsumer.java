@@ -16,21 +16,20 @@ public class NotificationConsumer {
         this.notificationQueue = notificationQueue;
     }
 
-//    @PostConstruct
-//    public void startConsumer() {
-//        Thread worker = new Thread(() -> {
-//            while (true) {
-//                try {
-//                    Notification notification = notificationQueue.take();
-//                    log.info("Processing notification: {}", notification);
-//                } catch (InterruptedException e) {
-//                    log.error("Interrupted Exception: {}", e.getMessage());
-//                }
-//            }
-//        });
-//        worker.setDaemon(true);
-//        worker.start();
-//    }
+    public void startSingleConsumer() {
+        Thread worker = new Thread(() -> {
+            while (true) {
+                try {
+                    Notification notification = notificationQueue.take();
+                    log.info("Processing notification: {}", notification);
+                } catch (InterruptedException e) {
+                    log.error("Interrupted Exception: {}", e.getMessage());
+                }
+            }
+        });
+        worker.setDaemon(true);
+        worker.start();
+    }
 
     @PostConstruct
     public void startMultipleConsumer() {

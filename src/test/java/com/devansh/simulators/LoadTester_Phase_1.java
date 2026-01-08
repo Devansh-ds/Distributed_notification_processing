@@ -10,10 +10,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.devansh.response.NotificationResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-public class LoadTester {
+public class LoadTester_Phase_1 {
 
     static AtomicInteger acceptedCount = new AtomicInteger();
     static AtomicInteger rejectedCount = new AtomicInteger(); // 429

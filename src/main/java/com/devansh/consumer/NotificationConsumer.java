@@ -16,6 +16,8 @@ public class NotificationConsumer {
         this.notificationQueue = notificationQueue;
     }
 
+    // Phase-1: Single consumer handler
+//    @PostConstruct
     public void startSingleConsumer() {
         Thread worker = new Thread(() -> {
             while (true) {
@@ -31,7 +33,8 @@ public class NotificationConsumer {
         worker.start();
     }
 
-    @PostConstruct
+    // Phase-1: Multiple consumer thread for async processing
+//    @PostConstruct
     public void startMultipleConsumer() {
         int workerCount = 20;
         int waitingTimeInMilliSeconds = 100;

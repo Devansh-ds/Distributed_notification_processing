@@ -20,9 +20,7 @@ This project focuses on **decoupling ingestion from processing** and progressive
 
 ---
 
-## Current Status
-
-**Phase 1 — Minimal Asynchronous Decoupling (Completed)**
+## Phase 1 — Minimal Asynchronous Decoupling (Completed)
 
 The system accepts notification requests and places them into a bounded in-memory queue, returning immediately to the client without blocking on processing.
 
@@ -127,39 +125,122 @@ This validates the **producer–consumer decoupling** model.
 * Explicit overload protection
 * Stable ingestion under high traffic
 
+
+## Phase-2 Architecture 
+
+```
+Client
+  |
+  v
+POST /notification
+  |
+  v
+NotificationController
+  |
+  v
+InMemoryNotificationQueue (bounded)
+  |
+  v
+NotificationDispatcher (single thread)
+  |
+  v
+WorkerPool (ThreadPoolExecutor, bounded)
+  |
+  v
+Notification Processing
+```
+
+This architecture directly maps to:
+
+* Kafka consumer group model
+* SQS poller + ECS worker tasks
+* RabbitMQ worker queues
+
 ---
 
-## Known Limitations (Intentional)
+## Core Design Evolution
 
-Phase 1 does **not** include:
+### Phase-1: Asynchronous Ingestion
 
-* Retry or backoff logic
-* Dead Letter Queue (DLQ)
-* Persistence
-* Metrics or observability
+* Requests are accepted via REST
+* Notifications are **enqueued**, not processed synchronously
+* API latency remains stable even if processing is slow
 
-These are introduced incrementally in later phases.
+### Phase-1 Backpressure
+
+* Bounded queue prevents memory blow-up
+* Queue full → HTTP `429 Too Many Requests`
+* Overload is **explicit**, not silent
+
+---
+
+### Phase-2: Dispatcher + Worker Pool (Critical Upgrade)
+
+Naive approach (intentionally avoided):
+
+```java
+new Thread(() -> {
+    while (true) {
+        process();
+    }
+}).start();
+```
+
+This is:
+
+* Unbounded
+* Impossible to tune
+* Not observable
+* Unsafe under load
+
+---
+
+### Phase-2 Correct Model
+
+```java
+ExecutorService workerPool = new ThreadPoolExecutor(
+    10,                      // core threads
+    20,                      // max threads
+    60, TimeUnit.SECONDS,
+    new ArrayBlockingQueue<>(500),
+    new ThreadPoolExecutor.CallerRunsPolicy()
+);
+```
+
+A **single dispatcher thread** pulls from the queue and submits tasks to the worker pool.
+
+---
+
+## Load Testing (Phase-2)
+
+A custom Java-based load simulator was used to stress the system end-to-end at the ingestion layer.
+
+### Test Configuration
+
+* Total requests: **10,000**
+* Client concurrency: **50**
+* Bounded ingestion queue
+* Dispatcher + bounded worker pool
+* Processing delay simulated (~100 ms)
+
+---
+
+### Phase-2 Results
+
+```
+========== LOAD TEST RESULT ==========
+Total Requests: 10000
+Accepted (2xx): 1940
+Rejected (429): 8060
+Errors: 0
+Time Taken(ms): 3620
+Throughput (req/sec): 2762
+```
 
 ---
 
 ## Tech Stack
 
-* Java
+* Java 23
 * Spring Boot
-* BlockingQueue (LinkedBlockingQueue)
-* Java HttpClient (load testing)
-
----
-
-## Engineering Philosophy
-
-* Design for failure, not happy paths
-* Make overload visible
-* Prefer explicit backpressure over silent degradation
-* Evolve systems incrementally
-
----
-
-### Status: Actively evolving
-
-Each phase is added deliberately to expose real backend challenges and trade-offs.
+* Lombok

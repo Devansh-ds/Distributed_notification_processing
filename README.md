@@ -237,10 +237,41 @@ Time Taken(ms): 3620
 Throughput (req/sec): 2762
 ```
 
----
+## Phase 3 – Slow Downstream Simulation & Backpressure Validation
 
-## Tech Stack
+In this phase, I simulated **real-world downstream latency and failures** to observe how the system behaves under stress.
 
-* Java 23
-* Spring Boot
-* Lombok
+### What was added
+
+* Introduced **artificial latency (50–350ms)** in the Email notification provider to mimic slow external services.
+* Simulated **random failures (~20%)** during notification delivery.
+* Kept the queue **bounded** and executor **thread-limited** to enforce backpressure.
+* Ensured the API responds quickly with **accept or reject** without blocking on processing.
+
+### Goal
+
+To validate that:
+
+* Slow providers reduce effective processing capacity
+* The system applies backpressure instead of failing
+* Requests are rejected early when the system is overloaded
+
+### Load Test Result
+
+```
+Total Requests: 10000
+Accepted (2xx): 1359
+Rejected (429): 8641
+Errors: 0
+Time Taken(ms): 2299
+Throughput (req/sec): 4349
+```
+
+### Key Observations
+
+* High rejection rate confirms **early backpressure** under slow downstream conditions.
+* Zero errors indicate **system stability** despite latency and failures.
+* Higher throughput reflects **fast rejection**, not faster processing.
+* Processing continues asynchronously after HTTP responses are returned.
+
+This phase demonstrates how downstream latency directly impacts system capacity and why early rejection is critical for stability.

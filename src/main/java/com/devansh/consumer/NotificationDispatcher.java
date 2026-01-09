@@ -2,6 +2,7 @@ package com.devansh.consumer;
 
 import com.devansh.entity.Notification;
 import com.devansh.queue.InMemoryNotificationQueue;
+import com.devansh.service.NotificationProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,11 +18,12 @@ public class NotificationDispatcher {
 
     private InMemoryNotificationQueue queue;
     private ExecutorService workerPool;
+    private NotificationProvider notificationProvider;
     private static final Integer CORE_POOL_SIZE = 10;
     private static final Integer MAXIMUM_POOL_SIZE = 20;
     private static final Integer KEEP_ALIVE_TIME = 60;
 
-    public NotificationDispatcher(InMemoryNotificationQueue queue) {
+    public NotificationDispatcher(InMemoryNotificationQueue queue, NotificationProvider notificationProvider) {
         this.queue = queue;
         this.workerPool = new ThreadPoolExecutor(
                 CORE_POOL_SIZE,
@@ -30,6 +32,7 @@ public class NotificationDispatcher {
                 new ArrayBlockingQueue<>(500),
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
+        this.notificationProvider = notificationProvider;
     }
 
     @PostConstruct
@@ -49,18 +52,20 @@ public class NotificationDispatcher {
             }
         });
         dispatcherThread.setName("dispatcher-thread");
+        dispatcherThread.setDaemon(true);
         dispatcherThread.start();
     }
 
     private void process(Notification notification) {
         try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Worker interrupted while processing {}", notification.getId());
+            notificationProvider.send(notification);
+            log.debug("Sent notification {}", notification);
+        } catch (Exception e) {
+            log.warn("Notification failed: {}", e.getMessage());
+            throw e;
         }
-        log.info("Processing notification {}", notification);
     }
+
 }
 
 

@@ -275,3 +275,112 @@ Throughput (req/sec): 4349
 * Processing continues asynchronously after HTTP responses are returned.
 
 This phase demonstrates how downstream latency directly impacts system capacity and why early rejection is critical for stability.
+
+---
+
+## Phase-4: Retry Mechanism, Dead Letter Queue & System Visibility
+
+### Objective
+
+Enhance the notification processing pipeline with **fault tolerance**, **controlled retries**, and **operational visibility** while maintaining system stability under heavy load.
+
+---
+
+### Key Enhancements
+
+#### Bounded Retry Mechanism
+
+* Failed notification deliveries are retried up to a **configured maximum retry limit**
+* Retries are re-enqueued instead of blocking worker threads
+* Prevents infinite retry loops and retry storms during high failure rates
+
+**Observed Behavior**
+
+* Retry attempts increased gradually during load
+* Retries were spread over time, avoiding bursts
+* System remained stable even with intentional provider failures
+
+---
+
+#### Dead Letter Queue (DLQ)
+
+* Notifications exceeding the retry limit are moved to a **Dead Letter Queue**
+* DLQ isolates permanently failing notifications from the main pipeline
+* DLQ consumer logs failed notification IDs for post-mortem analysis
+
+**Observed Behavior**
+
+* Only a small number of notifications reached the DLQ
+* DLQ growth occurred strictly after retry exhaustion
+* Main processing pipeline remained unaffected
+
+---
+
+#### Worker Pool & Backpressure Handling
+
+* Fixed-size worker pool processes notifications concurrently
+* Internal bounded queue absorbs bursts when workers are saturated
+* Protects the system from thread exhaustion and overload
+
+**Observed Behavior**
+
+* Worker pool consistently hit max utilization under load
+* Queue size increased temporarily and drained smoothly after load completion
+* No thread leaks or deadlocks observed
+
+---
+
+#### System Metrics & Observability
+
+A periodic system reporter logs real-time operational metrics:
+
+* Active worker count
+* Queue depth
+* Completed task count
+* Total retry attempts
+* Successful deliveries
+* Failed attempts
+* DLQ size
+
+These metrics provided a **clear timeline view** of system behavior during stress testing.
+
+---
+
+### Load Test Result (Phase-4)
+
+```
+========== LOAD TEST RESULT ==========
+Total Requests: 10000
+Accepted (2xx): 1674
+Rejected (429): 8326
+Errors: 0
+Time Taken(ms): 2444
+Throughput (req/sec): 4091
+```
+
+**Interpretation**
+
+* High rejection count confirms effective **backpressure** via bounded queues
+* Zero errors indicate system stability under overload
+* High throughput shows fast ingestion while processing remains controlled
+* Retries and DLQ ensured failures were handled safely without meltdown
+
+---
+
+### Outcome
+
+Phase-4 upgrades the system into a **resilient, production-ready asynchronous pipeline** capable of:
+
+* Handling transient failures with delayed retries
+* Isolating permanent failures using DLQ
+* Maintaining stability under overload
+* Providing actionable observability for operators
+
+---
+
+### What This Phase Demonstrates
+
+* Why retries must be **bounded and delayed**
+* How DLQs protect core processing paths
+* How backpressure prevents cascading failures
+* How metrics reveal real system behavior under load

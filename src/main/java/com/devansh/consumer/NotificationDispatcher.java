@@ -81,9 +81,11 @@ public class NotificationDispatcher {
             int retry = notification.getRetryCount() + 1;
             notification.setRetryCount(retry);
             notificationMetrics.incrementSentFailure();
+            notificationMetrics.incrementRetryAttempt();
 
             if (retry > RetryPolicy.MAX_RETRIES) {
                 deadLetterQueue.publish(notification);
+                notificationMetrics.incrementDeadLetterQueueCounter();
                 return;
             }
 

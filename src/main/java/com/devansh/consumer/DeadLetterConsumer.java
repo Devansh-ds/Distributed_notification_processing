@@ -22,7 +22,7 @@ public class DeadLetterConsumer {
             while (true) {
                 try {
                     Notification notification = deadLetterQueue.take();
-                    log.error("DLQ notification {} after {} retries and current queue size: {}", notification.getId(), notification.getRetryCount(), deadLetterQueue.getQueueSize());
+                    log.error("DLQ notification {} after {} retries", notification.getId(), notification.getRetryCount());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;

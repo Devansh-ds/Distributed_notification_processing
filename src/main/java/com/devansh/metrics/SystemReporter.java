@@ -47,7 +47,7 @@ public class SystemReporter {
                 metrics.getRetryAttempt(),
                 metrics.getSentSuccess(),
                 metrics.getSentFailure(),
-                deadLetterQueue.size()
+                metrics.getDeadLetterQueueCounter()
         );
     }
 }

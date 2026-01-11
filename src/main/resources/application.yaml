@@ -4,6 +4,7 @@ spring:
 logging:
   level:
     root: warn
+    com.devansh.metrics: info
 #  file:
 #    name: logs/application.log
 #    max-size: 20MB

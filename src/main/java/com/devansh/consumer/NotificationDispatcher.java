@@ -1,7 +1,11 @@
 package com.devansh.consumer;
 
 import com.devansh.entity.Notification;
+import com.devansh.metrics.NotificationMetrics;
+import com.devansh.queue.DeadLetterQueue;
 import com.devansh.queue.InMemoryNotificationQueue;
+import com.devansh.queue.RetryQueue;
+import com.devansh.retry.RetryPolicy;
 import com.devansh.service.NotificationProvider;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +23,19 @@ public class NotificationDispatcher {
     private InMemoryNotificationQueue queue;
     private ExecutorService workerPool;
     private NotificationProvider notificationProvider;
+    private DeadLetterQueue deadLetterQueue;
+    private RetryQueue retryQueue;
+    private NotificationMetrics notificationMetrics;
+
     private static final Integer CORE_POOL_SIZE = 10;
     private static final Integer MAXIMUM_POOL_SIZE = 20;
     private static final Integer KEEP_ALIVE_TIME = 60;
 
-    public NotificationDispatcher(InMemoryNotificationQueue queue, NotificationProvider notificationProvider) {
+    public NotificationDispatcher(InMemoryNotificationQueue queue,
+                                  NotificationProvider notificationProvider,
+                                  DeadLetterQueue deadLetterQueue,
+                                  RetryQueue retryQueue,
+                                  NotificationMetrics notificationMetrics) {
         this.queue = queue;
         this.workerPool = new ThreadPoolExecutor(
                 CORE_POOL_SIZE,
@@ -33,6 +45,9 @@ public class NotificationDispatcher {
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
         this.notificationProvider = notificationProvider;
+        this.deadLetterQueue = deadLetterQueue;
+        this.retryQueue = retryQueue;
+        this.notificationMetrics = notificationMetrics;
     }
 
     @PostConstruct
@@ -59,13 +74,29 @@ public class NotificationDispatcher {
     private void process(Notification notification) {
         try {
             notificationProvider.send(notification);
-            log.debug("Sent notification {}", notification);
+            notificationMetrics.incrementSentSuccess();
         } catch (Exception e) {
-            log.warn("Notification failed: {}", e.getMessage());
-            throw e;
+            notificationMetrics.incrementSentFailure();
+
+            int retry = notification.getRetryCount() + 1;
+            notification.setRetryCount(retry);
+            notificationMetrics.incrementSentFailure();
+
+            if (retry > RetryPolicy.MAX_RETRIES) {
+                deadLetterQueue.publish(notification);
+                return;
+            }
+
+            long delay = RetryPolicy.backOffMillis(retry);
+            long executeAt = System.currentTimeMillis() + delay;
+
+            retryQueue.schedule(notification, executeAt);
         }
     }
 
+    public ThreadPoolExecutor getWorkerPool() {
+        return (ThreadPoolExecutor) workerPool;
+    }
 }
 
 

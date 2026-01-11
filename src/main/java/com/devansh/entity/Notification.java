@@ -22,12 +22,16 @@ public class Notification {
     private NotificationType type;
     private Instant timestamp;
 
+    private int retryCount;
+    private long nextAttemptAt;
+
     public Notification(String message, String recipient, NotificationType type) {
         this.id = UUID.randomUUID().toString();
         this.message = message;
         this.recipient = recipient;
         this.type = type;
         this.timestamp = Instant.now();
+        retryCount = 0;
     }
 
 }

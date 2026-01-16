@@ -82,7 +82,7 @@ public class LoadTester_Phase_2 {
                 .thenAccept(response -> {
                     int status = response.statusCode();
                     if (status == 200 || status == 202) acceptedCount.incrementAndGet();
-                    else if (status == 429) rejectedCount.incrementAndGet();
+                    else if (status == 507) rejectedCount.incrementAndGet();
                     else errorCount.incrementAndGet();
                 })
                 .exceptionally(ex -> {

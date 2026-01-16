@@ -7,20 +7,24 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LoadTester_Phase_1 {
+public class LoadTester_Phase_5 {
 
     static AtomicInteger acceptedCount = new AtomicInteger();
     static AtomicInteger rejectedCount = new AtomicInteger(); // 429
+    static AtomicInteger ingressRejectedCount = new AtomicInteger();
     static AtomicInteger errorCount = new AtomicInteger();
 
     static final Semaphore inFlight = new Semaphore(50);
 
     public static void main(String[] args) {
 
-        int totalRequests = 100_000;
+        int totalRequests = 10_000;
         int concurrency = 50;
 
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
@@ -48,7 +52,8 @@ public class LoadTester_Phase_1 {
         System.out.println("========== LOAD TEST RESULT ==========");
         System.out.println("Total Requests: " + totalRequests);
         System.out.println("Accepted (2xx): " + acceptedCount.get());
-        System.out.println("Rejected (429): " + rejectedCount.get());
+        System.out.println("Rejected (503): " + rejectedCount.get());
+        System.out.println("Ingress (429): " + ingressRejectedCount.get());
         System.out.println("Errors: " + errorCount.get());
         System.out.println("Time Taken(ms): " + (end - start));
         System.out.println("Throughput (req/sec): " +
@@ -81,9 +86,16 @@ public class LoadTester_Phase_1 {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(response -> {
                     int status = response.statusCode();
-                    if (status == 200 || status == 202) acceptedCount.incrementAndGet();
-                    else if (status == 507) rejectedCount.incrementAndGet();
-                    else errorCount.incrementAndGet();
+
+                    if (status == 200 || status == 202) {
+                        acceptedCount.incrementAndGet();
+                    } else if (status == 429) {
+                        ingressRejectedCount.incrementAndGet(); // ingress
+                    } else if (status == 503) {
+                        rejectedCount.incrementAndGet(); // backpressure
+                    } else {
+                        errorCount.incrementAndGet();
+                    }
                 })
                 .exceptionally(ex -> {
                     errorCount.incrementAndGet();

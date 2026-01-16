@@ -42,7 +42,7 @@ public class NotificationDispatcher {
                 MAXIMUM_POOL_SIZE,
                 KEEP_ALIVE_TIME, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(500),
-                new ThreadPoolExecutor.CallerRunsPolicy()
+                new ThreadPoolExecutor.AbortPolicy()
         );
         this.notificationProvider = notificationProvider;
         this.deadLetterQueue = deadLetterQueue;

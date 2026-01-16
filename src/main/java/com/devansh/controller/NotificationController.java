@@ -25,7 +25,7 @@ public class NotificationController {
         NotificationResponse notificationResponse = notificationService.sendNotification(notificationRequest);
 
         if (!notificationResponse.isPublished()) {
-            return ResponseEntity.status(429).body(notificationResponse);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(notificationResponse);
         }
 
         return new ResponseEntity<>(notificationResponse, HttpStatus.ACCEPTED);

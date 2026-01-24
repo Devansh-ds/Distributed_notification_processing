@@ -4,6 +4,7 @@ import com.devansh.consumer.NotificationDispatcher;
 import com.devansh.entity.Notification;
 import com.devansh.queue.DeadLetterQueue;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -15,17 +16,12 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SystemReporter {
 
     private final BlockingQueue<Notification> deadLetterQueue;
     private final NotificationMetrics metrics;
     private final ThreadPoolExecutor workerPool;
-
-    public SystemReporter(DeadLetterQueue deadLetterQueue, NotificationMetrics metrics, NotificationDispatcher notificationDispatcher) {
-        this.deadLetterQueue = deadLetterQueue.getDeadLetterQueue();
-        this.metrics = metrics;
-        this.workerPool = notificationDispatcher.getWorkerPool();
-    }
 
     @PostConstruct
     public void start() {

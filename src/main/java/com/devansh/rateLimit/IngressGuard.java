@@ -16,8 +16,8 @@ public class IngressGuard {
         this.rateLimiter = RateLimitFactory.create(
                 RateLimiterType.TOKEN_BUCKET,
                 RateLimitConfig.builder()
-                        .bucketCapacity(1000)
-                        .refillToken(500)
+                        .bucketCapacity(2000)
+                        .refillToken(300)
                         .refillIntervalMillis(1000)
                 .build()
         );

@@ -31,7 +31,7 @@ public class Notification {
         this.recipient = recipient;
         this.type = type;
         this.timestamp = Instant.now();
-        retryCount = 0;
+        this.retryCount = 0;
     }
 
 }

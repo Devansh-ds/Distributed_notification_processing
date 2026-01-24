@@ -11,6 +11,7 @@ public class NotificationMetrics {
     private final AtomicLong sentSuccess  = new AtomicLong(0);
     private final AtomicLong sentFailure  = new AtomicLong(0);
     private final AtomicLong deadLetterQueueCounter = new AtomicLong(0);
+    private final AtomicLong workerPoolRejection = new AtomicLong(0);
 
     public void incrementRetryAttempt() {
         retryAttempt.incrementAndGet();
@@ -28,6 +29,10 @@ public class NotificationMetrics {
         deadLetterQueueCounter.incrementAndGet();
     }
 
+    public void incrementWorkerPoolRejection() {
+        workerPoolRejection.incrementAndGet();
+    }
+
     public long getRetryAttempt() {
         return retryAttempt.get();
     }
@@ -42,5 +47,9 @@ public class NotificationMetrics {
 
     public long getDeadLetterQueueCounter() {
         return deadLetterQueueCounter.get();
+    }
+
+    public long getWorkerPoolRejection() {
+        return workerPoolRejection.get();
     }
 }

@@ -4,8 +4,6 @@ import com.devansh.entity.Notification;
 import com.devansh.queue.InMemoryNotificationQueue;
 import com.devansh.request.NotificationRequest;
 import com.devansh.response.NotificationResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -13,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class NotificationService {
 
     private final InMemoryNotificationQueue notificationQueue;
-    private final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     public NotificationService(InMemoryNotificationQueue notificationQueue) {
         this.notificationQueue = notificationQueue;

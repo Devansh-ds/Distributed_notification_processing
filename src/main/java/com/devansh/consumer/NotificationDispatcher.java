@@ -42,7 +42,7 @@ public class NotificationDispatcher {
                 MAXIMUM_POOL_SIZE,
                 KEEP_ALIVE_TIME, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(500),
-                new ThreadPoolExecutor.AbortPolicy()
+                new ThreadPoolExecutor.CallerRunsPolicy()
         );
         this.notificationProvider = notificationProvider;
         this.deadLetterQueue = deadLetterQueue;
@@ -53,16 +53,15 @@ public class NotificationDispatcher {
     @PostConstruct
     public void start() {
         Thread dispatcherThread = new Thread(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Notification notification = queue.take();
-                    workerPool.submit(() -> {
-                        process(notification);
-                    });
+                    workerPool.execute(() -> process(notification));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    System.out.println(Thread.currentThread().getName() + " is interrupted");
-                    break;
+                    log.warn("Dispatcher interrupted, shutting down");
+                } catch (Exception e) {
+                    log.error("Dispatcher error", e);
                 }
             }
         });
@@ -80,7 +79,6 @@ public class NotificationDispatcher {
 
             int retry = notification.getRetryCount() + 1;
             notification.setRetryCount(retry);
-            notificationMetrics.incrementSentFailure();
             notificationMetrics.incrementRetryAttempt();
 
             if (retry > RetryPolicy.MAX_RETRIES) {
@@ -89,27 +87,8 @@ public class NotificationDispatcher {
                 return;
             }
 
-            long delay = RetryPolicy.backOffMillis(retry);
-            long executeAt = System.currentTimeMillis() + delay;
-
-            retryQueue.schedule(notification, executeAt);
+            retryQueue.schedule(notification, System.currentTimeMillis() + RetryPolicy.backOffMillis(retry));
         }
-    }
 
-    public ThreadPoolExecutor getWorkerPool() {
-        return (ThreadPoolExecutor) workerPool;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
